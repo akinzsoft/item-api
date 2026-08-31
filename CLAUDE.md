@@ -24,6 +24,8 @@ src/
   routes.ts        # API route definitions
   controller.ts    # Request handlers (add/update/delete/get logic)
   types.ts         # Shared TypeScript types/interfaces
+public/
+  index.html       # Static CRUD form UI, served at / via express.static
 .env               # DB connection config (not committed)
 ```
 
