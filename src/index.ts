@@ -1,17 +1,16 @@
 import express, { Request, Response, NextFunction } from "express";
-import dotenv from "dotenv";
 import { router } from "./routes";
 import { pool } from "./db";
-
-dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(router);
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
-  res.status(500).json({ success: false, error: "internal server error" });
+  const status = err.status ?? err.statusCode ?? 500;
+  const message = status < 500 ? err.message : "internal server error";
+  res.status(status).json({ success: false, error: message });
 });
 
 const port = Number(process.env.PORT) || 3000;
