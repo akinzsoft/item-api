@@ -1,9 +1,11 @@
+import path from "path";
 import express, { Request, Response, NextFunction } from "express";
 import { router } from "./routes";
 import { pool } from "./db";
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "..", "public")));
 app.use(router);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

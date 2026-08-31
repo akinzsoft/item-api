@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Item API</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --border: #e2e5ea;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 14px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  input:focus, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  .row { display: flex; gap: 8px; }
+  button {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #f0f1f3; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--border); }
+  .btn-danger:hover { background: #fef2f2; border-color: var(--danger); }
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .item:last-child { border-bottom: none; }
+  .item-name { font-weight: 600; font-size: 14px; }
+  .item-desc { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .error {
+    background: #fef2f2;
+    color: var(--danger);
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Items</h1>
+  <p class="sub">CRUD UI for the Item API</p>
+
+  <div class="error" id="error"></div>
+
+  <div class="card">
+    <h2 id="form-title">Add item</h2>
+    <form id="item-form">
+      <input type="hidden" id="item-id" />
+      <label for="name">Name</label>
+      <input type="text" id="name" required maxlength="255" />
+      <label for="description">Description</label>
+      <textarea id="description"></textarea>
+      <div class="row">
+        <button type="submit" class="btn-primary" id="submit-btn">Add item</button>
+        <button type="button" class="btn-ghost" id="cancel-btn" style="display:none">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>All items</h2>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("item-form");
+  const idField = document.getElementById("item-id");
+  const nameField = document.getElementById("name");
+  const descField = document.getElementById("description");
+  const list = document.getElementById("list");
+  const errorBox = document.getElementById("error");
+  const formTitle = document.getElementById("form-title");
+  const submitBtn = document.getElementById("submit-btn");
+  const cancelBtn = document.getElementById("cancel-btn");
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = "block";
+  }
+
+  function clearError() {
+    errorBox.style.display = "none";
+  }
+
+  function resetForm() {
+    idField.value = "";
+    nameField.value = "";
+    descField.value = "";
+    formTitle.textContent = "Add item";
+    submitBtn.textContent = "Add item";
+    cancelBtn.style.display = "none";
+  }
+
+  function startEdit(item) {
+    idField.value = item.id;
+    nameField.value = item.name;
+    descField.value = item.description || "";
+    formTitle.textContent = `Edit item #${item.id}`;
+    submitBtn.textContent = "Save changes";
+    cancelBtn.style.display = "inline-block";
+    nameField.focus();
+  }
+
+  cancelBtn.addEventListener("click", resetForm);
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    const body = await res.json().catch(() => null);
+    if (!res.ok || !body || body.success === false) {
+      throw new Error((body && body.error) || `request failed (${res.status})`);
+    }
+    return body.data;
+  }
+
+  async function loadItems() {
+    clearError();
+    try {
+      const items = await api("/items");
+      renderItems(items);
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  function renderItems(items) {
+    list.innerHTML = "";
+    if (items.length === 0) {
+      list.innerHTML = '<p class="empty">No items yet.</p>';
+      return;
+    }
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = `
+        <div>
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ""}
+        </div>
+        <div class="item-actions">
+          <button class="btn-ghost" data-action="edit">Edit</button>
+          <button class="btn-danger" data-action="delete">Delete</button>
+        </div>
+      `;
+      row.querySelector('[data-action="edit"]').addEventListener("click", () => startEdit(item));
+      row.querySelector('[data-action="delete"]').addEventListener("click", () => deleteItem(item.id));
+      list.appendChild(row);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function deleteItem(id) {
+    clearError();
+    try {
+      await api(`/items/${id}`, { method: "DELETE" });
+      await loadItems();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearError();
+    const payload = {
+      name: nameField.value.trim(),
+      description: descField.value.trim() || null,
+    };
+    const id = idField.value;
+    try {
+      if (id) {
+        await api(`/items/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await api("/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      resetForm();
+      await loadItems();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  loadItems();
+</script>
+</body>
+</html>
