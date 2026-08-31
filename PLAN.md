@@ -35,7 +35,7 @@ Ship a working MVP REST API with add, get, update, and delete operations, backed
 - [ ] Manually test each endpoint against real DB (curl or Postman/Thunder Client)
 - [ ] Add proper HTTP status codes (201 on create, 404 on not found, 500 on DB errors, etc.)
 - [ ] Add basic error handling middleware (catch DB connection errors gracefully)
-- [ ] Write a short README with setup steps, .env example, and example requests
+- [x] Write a short README with setup steps, .env example, and example requests
 
 ## Phase 5 — Optional Next Steps (post-MVP)
 - [ ] Add request validation library (e.g. zod)
